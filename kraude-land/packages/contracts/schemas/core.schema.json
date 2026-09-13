@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://kraude.local/contracts/core.schema.json",
+  "$defs":{
+    "Namespace":{"enum":["REAL","DEMO"]},
+    "Agent":{"type":"object","required":["id","name","starRank","lifecycle","cognitionProfileId","createdAt"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"starRank":{"type":"integer","minimum":1,"maximum":7},"lifecycle":{"enum":["ACTIVE","RESTING","SYNTHESIZED"]},"cognitionProfileId":{"type":"string"},"createdAt":{"type":"string","format":"date-time"}},"additionalProperties":false},
+    "Project":{"type":"object","required":["id","name","status","createdAt"]},
+    "Repo":{"type":"object","required":["id","projectId","name","canonicalPath","baseHead","defaultBranch","createdAt"]},
+    "Mission":{"type":"object","required":["id","projectId","repoId","title","status","requiredEvidenceKinds","createdAt"]},
+    "Party":{"type":"object","required":["id","missionId","agentIds","status","createdAt"],"properties":{"agentIds":{"type":"array","minItems":1,"maxItems":5}}},
+    "Run":{"type":"object","required":["id","missionId","namespace","status","createdAt"]},
+    "Evidence":{"type":"object","required":["id","namespace","runId","kind","passed","command","exitCode","artifactPath","createdAt"]},
+    "AuthorityDecision":{"type":"object","required":["id","action","decision","reason","createdAt"]},
+    "WorldEvent":{"type":"object","required":["id","namespace","type","occurredAt","payload"]}
+  }
+}
