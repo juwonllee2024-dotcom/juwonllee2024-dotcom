@@ -1,0 +1,25 @@
+{
+  "name": "kraude-land-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:phase0": "node --test tests/phase0.test.js",
+    "test:phase1": "node --test tests/phase1.test.js",
+    "test:phase2": "node --test tests/phase2.test.js",
+    "test:phase3": "node --test tests/phase3.test.js",
+    "test:phase4": "node --test tests/phase4.test.js",
+    "test:phase5": "node --test tests/phase5.test.js",
+    "dev": "node scripts/dev.mjs",
+    "accept:phase1:prepare": "node scripts/phase1_prepare.mjs ./evidence/phase1-real",
+    "accept:phase1:verify": "node scripts/phase1_verify.mjs ./evidence/phase1-real",
+    "accept:phase2": "node scripts/phase2_acceptance.mjs ./evidence/phase2-runtime",
+    "accept:phase4:a": "node scripts/phase4_prepare_a.mjs ./evidence/phase4-swap",
+    "accept:phase4:b": "node scripts/phase4_finalize_a_prepare_b.mjs ./evidence/phase4-swap",
+    "accept:phase4:verify": "node scripts/phase4_verify_b.mjs ./evidence/phase4-swap"
+  }
+}

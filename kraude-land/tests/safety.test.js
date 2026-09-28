@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {join} from 'node:path';import {writeFileSync} from 'node:fs';
+import {createRuntimeStore} from '../src/store.js';import {ProviderRegistry} from '../src/providers.js';import {authorizeCommand} from '../src/policy.js';import {createMissionWorktree} from '../src/git-sandbox.js';import {tempDir,cleanup,initGitRepo} from './helpers.js';
+
+test('destructive, credential, publish and repo-delete commands require explicit authority',()=>{for(const c of ['rm -rf repo','git push origin main','npm publish','cat ~/.ssh/id_rsa','rm -rf .git'])assert.equal(authorizeCommand(c,{authorityGranted:false}).allowed,false);assert.equal(authorizeCommand('node --test',{authorityGranted:false}).allowed,true);assert.equal(authorizeCommand('git push origin feature',{authorityGranted:true}).allowed,true)});
+
+test('dirty base repo blocks worktree mission start',()=>{const d=tempDir();const repo=join(d,'repo');initGitRepo(repo);writeFileSync(join(repo,'dirty.txt'),'x');assert.throws(()=>createMissionWorktree({repoRoot:repo,missionId:'M',baseHead:'HEAD',parentDir:join(d,'w')}),/dirty base/i);cleanup(d)});
+
+test('evidence is append-only and cannot be tampered',()=>{const d=tempDir();const s=createRuntimeStore(join(d,'w.db'));const id=s.createEvidence({namespace:'REAL',kind:'TEST',result:'PASS',real:true});assert.throws(()=>s.db.prepare("UPDATE evidence SET result='FAIL' WHERE evidence_id=?").run(id),/append-only/i);assert.throws(()=>s.db.prepare('DELETE FROM evidence WHERE evidence_id=?').run(id),/append-only/i);s.close();cleanup(d)});
+
+test('REAL request cannot use mock/simulated provider and timeout becomes failure',async()=>{const reg=new ProviderRegistry();reg.register({id:'mock',type:'mock',invoke:async()=>({text:'fake'})});await assert.rejects(()=>reg.invoke('mock',{namespace:'REAL'}),/REAL.*mock/i);reg.register({id:'slow',type:'bridge',health:async()=>({ok:true}),invoke:async()=>new Promise(r=>setTimeout(()=>r({text:'late'}),100))});await assert.rejects(()=>reg.invoke('slow',{namespace:'REAL'},{timeoutMs:5}),/timeout/i)});

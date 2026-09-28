@@ -1,0 +1,6 @@
+import { createHash } from 'node:crypto';import { detectNeeds } from './repo-runtime.js';import { buildMissionFromNeed } from './mission-engine.js';import { selectAgent } from './assignment.js';import { DurableQueue } from './queue.js';
+const id=x=>createHash('sha256').update(x).digest('hex').slice(0,16);
+export class WorldScheduler{
+ constructor(store){this.store=store;this.queue=new DurableQueue(store)}
+ scanAndPromote(repoId){const repo=this.store.getRepo(repoId);if(!repo)throw new Error('repo missing');const need=detectNeeds(repo.root)[0];if(!need)return {missionId:null};const key=`need:${repoId}:${need.path}:${need.line}:${need.kind}`;this.queue.enqueue({kind:'NEED',idempotencyKey:key,payload:{repoId,need}});const missionId=`M-${id(key)}`;let m=this.store.getMission(missionId);if(!m){m=buildMissionFromNeed(this.store,{missionId,repoId,need});const a=selectAgent(this.store,m);this.store.assignMission(missionId,a.agent_id);this.queue.enqueue({kind:'MISSION',idempotencyKey:`mission:${missionId}`,payload:{missionId,repoId,agentId:a.agent_id}});this.store.appendEvent({namespace:'REAL',type:'AGENT_ASSIGNED',actorId:'SYSTEM',missionId,payload:{agentId:a.agent_id}})}return {missionId}}
+}

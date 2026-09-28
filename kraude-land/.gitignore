@@ -1,0 +1,7 @@
+node_modules/
+data/
+evidence/
+*.db
+*.db-shm
+*.db-wal
+.DS_Store

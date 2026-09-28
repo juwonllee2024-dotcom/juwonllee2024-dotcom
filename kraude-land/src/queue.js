@@ -1,0 +1,7 @@
+export class DurableQueue{
+ constructor(store){this.store=store}
+ enqueue({kind,idempotencyKey,payload={},namespace='REAL',status='READY'}){const id=`job-${Buffer.from(idempotencyKey).toString('hex').slice(0,24)}`;this.store.db.prepare(`INSERT INTO jobs(job_id,namespace,kind,idempotency_key,status,payload) VALUES(?,?,?,?,?,?) ON CONFLICT(idempotency_key) DO NOTHING`).run(id,namespace,kind,idempotencyKey,status,JSON.stringify(payload));return this.store.db.prepare('SELECT * FROM jobs WHERE idempotency_key=?').get(idempotencyKey)}
+ leaseNext(owner,ttlMs=30000,now=Date.now()){this.recoverExpired(now);const row=this.store.db.prepare("SELECT * FROM jobs WHERE status='READY' ORDER BY created_at,job_id LIMIT 1").get();if(!row)return null;const exp=now+ttlMs;const r=this.store.db.prepare("UPDATE jobs SET status='LEASED',lease_owner=?,lease_expires_at=?,attempts=attempts+1,updated_at=CURRENT_TIMESTAMP WHERE job_id=? AND status='READY'").run(owner,exp,row.job_id);return r.changes?this.store.db.prepare('SELECT * FROM jobs WHERE job_id=?').get(row.job_id):null}
+ complete(jobId,owner){const r=this.store.db.prepare("UPDATE jobs SET status='DONE',lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE job_id=? AND lease_owner=?").run(jobId,owner);return r.changes===1}
+ recoverExpired(now=Date.now()){const r=this.store.db.prepare("UPDATE jobs SET status='READY',lease_owner=NULL,lease_expires_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE status='LEASED' AND lease_expires_at<=?").run(now);return Number(r.changes)}
+}

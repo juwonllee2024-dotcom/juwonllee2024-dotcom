@@ -1,0 +1,1 @@
+export function selectAgent(store,mission){const agents=store.listAgents().filter(a=>a.status==='IDLE'&&a.primary_provider);if(!agents.length)throw new Error('no eligible healthy/configured agent');agents.sort((a,b)=>b.star-a.star||a.agent_id.localeCompare(b.agent_id));return agents[0]}
